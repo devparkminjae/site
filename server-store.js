@@ -14,7 +14,7 @@
     const { data } = await client.from('site_variables').select('value').eq('site_id', siteId).eq('key', name).single();
     return data?.value ?? fallback;
   };
-  const post = async (name, value) => { if (!client) throw new Error('Supabase 연결이 필요합니다.'); const { error } = await client.from('site_variables').upsert({ site_id: siteId, key: name, value, updated_at: new Date().toISOString() }); if (error) throw error; return value; };
+  const post = async (name, value) => { if (!client) throw new Error('Supabase 연결이 필요합니다.'); const { data, error } = await client.from('site_variables').update({ value, updated_at: new Date().toISOString() }).eq('site_id', siteId).eq('key', name).select('key'); if (error) throw error; if (!data?.length) throw new Error('존재하지 않거나 공개 POST가 허용되지 않은 변수입니다.'); return value; };
   window.SiteStore = Object.freeze({ siteId, get: read, post, list: async (name) => { const value = await read(name, []); return Array.isArray(value) ? value : []; }, all: async () => { if (!client) return {}; const { data } = await client.from('site_variables').select('key,value').eq('site_id', siteId); return Object.fromEntries((data || []).map(row => [row.key, row.value])); } });
   window.dispatchEvent(new Event('site-store-ready'));
 })();
