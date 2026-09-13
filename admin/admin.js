@@ -1,31 +1,16 @@
-const loginCard = document.querySelector('#login-card');
-const editor = document.querySelector('#editor');
-const $ = (selector) => document.querySelector(selector);
-let client, user;
-
-function setMessage(id, text, kind = '') { const el = $(id); el.textContent = text; el.className = `message ${kind}`; }
-function configured() { return window.SUPABASE_URL && window.SUPABASE_ANON_KEY && !window.SUPABASE_URL.includes('YOUR_'); }
-async function isAdmin() { const { data } = await client.from('profiles').select('role').eq('id', user.id).single(); return data?.role === 'admin'; }
-async function load() { const { data } = await client.from('site_content').select('page_html').eq('id', 'home').single(); $('#page_html').value = data?.page_html || ''; }
-async function openEditor() { loginCard.hidden = true; editor.hidden = false; await load(); }
-async function restoreSession() { const { data: { session } } = await client.auth.getSession(); if (!session) return; user = session.user; if (!(await isAdmin())) { await client.auth.signOut(); return setMessage('#login-message', '이 계정에는 관리자 권한이 없습니다.', 'error'); } openEditor(); }
-
-$('#login-form').addEventListener('submit', async (event) => {
-  event.preventDefault();
-  if (!configured()) return setMessage('#login-message', '먼저 supabase-config.js를 설정하세요.', 'error');
-  const { data, error } = await client.auth.signInWithPassword({ email: $('#email').value, password: $('#password').value });
-  if (error) return setMessage('#login-message', error.message, 'error');
-  user = data.user;
-  if (!(await isAdmin())) { await client.auth.signOut(); return setMessage('#login-message', '이 계정에는 관리자 권한이 없습니다.', 'error'); }
-  openEditor();
-});
-$('#html-file').addEventListener('change', async () => { const file = $('#html-file').files[0]; if (!file) return; $('#page_html').value = await file.text(); setMessage('#save-message', `「${file.name}」 파일을 불러왔습니다. 저장을 누르세요.`, 'success'); });
-$('#content-form').addEventListener('submit', async (event) => {
-  event.preventDefault(); const page_html = $('#page_html').value.trim();
-  if (!page_html) return setMessage('#save-message', 'HTML 파일을 업로드하거나 코드를 붙여넣으세요.', 'error');
-  $('#save').disabled = true; setMessage('#save-message', '저장 중…');
-  const { error } = await client.from('site_content').upsert({ id: 'home', page_html, updated_at: new Date().toISOString() });
-  $('#save').disabled = false; setMessage('#save-message', error ? error.message : '저장했습니다. 공개 페이지에 바로 반영됩니다.', error ? 'error' : 'success');
-});
-$('#logout').addEventListener('click', async () => { await client.auth.signOut(); editor.hidden = true; loginCard.hidden = false; });
-if (configured()) { client = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY); restoreSession(); } else setMessage('#login-message', 'Supabase 연결 설정이 필요합니다.', 'error');
+const loginCard=document.querySelector('#login-card'),editor=document.querySelector('#editor');const $=s=>document.querySelector(s);let client,user,currentId='home';
+const msg=(id,text,kind='')=>{const el=$(id);el.textContent=text;el.className=`message ${kind}`};
+const configured=()=>window.SUPABASE_URL&&window.SUPABASE_ANON_KEY&&!window.SUPABASE_URL.includes('YOUR_');
+const publicUrl=id=>id==='home'?'../':`../${id}/`;
+async function isAdmin(){const {data}=await client.from('profiles').select('role').eq('id',user.id).single();return data?.role==='admin'}
+async function loadSites(){const {data,error}=await client.from('site_content').select('id').order('id');if(error)return msg('#save-message',error.message,'error');const select=$('#site-select');select.replaceChildren(...data.map(({id})=>{const option=document.createElement('option');option.value=id;option.textContent=id==='home'?'home (기본 사이트)':id;return option}));if(!data.some(x=>x.id===currentId))currentId='home';select.value=currentId;await loadPage()}
+async function loadPage(){const {data,error}=await client.from('site_content').select('page_html').eq('id',currentId).single();if(error)return msg('#save-message',error.message,'error');$('#page_html').value=data?.page_html||'';const link=$('#site-link');link.href=publicUrl(currentId);link.textContent=`/${currentId==='home'?'':currentId}/ 공개 사이트 열기 ↗`}
+async function openEditor(){loginCard.hidden=true;editor.hidden=false;await loadSites()}
+async function restoreSession(){const {data:{session}}=await client.auth.getSession();if(!session)return;user=session.user;if(!await isAdmin()){await client.auth.signOut();return msg('#login-message','이 계정에는 관리자 권한이 없습니다.','error')}openEditor()}
+$('#login-form').addEventListener('submit',async e=>{e.preventDefault();if(!configured())return msg('#login-message','먼저 supabase-config.js를 설정하세요.','error');const {data,error}=await client.auth.signInWithPassword({email:$('#email').value,password:$('#password').value});if(error)return msg('#login-message',error.message,'error');user=data.user;if(!await isAdmin()){await client.auth.signOut();return msg('#login-message','이 계정에는 관리자 권한이 없습니다.','error')}openEditor()});
+$('#site-select').addEventListener('change',async()=>{currentId=$('#site-select').value;await loadPage()});
+$('#create-form').addEventListener('submit',async e=>{e.preventDefault();const id=$('#new-site-id').value.trim().toLowerCase();if(!/^[a-z0-9-]+$/.test(id))return msg('#create-message','디렉터리 이름은 영문 소문자, 숫자, 하이픈만 사용할 수 있습니다.','error');if(id==='home'||id==='admin')return msg('#create-message','home과 admin은 사용할 수 없습니다.','error');const {error}=await client.from('site_content').insert({id,page_html:''});if(error)return msg('#create-message',error.message.includes('duplicate')?'이미 있는 디렉터리 이름입니다.':error.message,'error');currentId=id;$('#new-site-id').value='';msg('#create-message',`/${id}/ 사이트를 만들었습니다. HTML을 저장하세요.`,'success');await loadSites()});
+$('#html-file').addEventListener('change',async()=>{const file=$('#html-file').files[0];if(!file)return;$('#page_html').value=await file.text();msg('#save-message',`「${file.name}」 파일을 불러왔습니다. 저장을 누르세요.`,'success')});
+$('#content-form').addEventListener('submit',async e=>{e.preventDefault();const page_html=$('#page_html').value.trim();if(!page_html)return msg('#save-message','HTML 파일을 업로드하거나 코드를 붙여넣으세요.','error');$('#save').disabled=true;msg('#save-message','저장 중…');const {error}=await client.from('site_content').update({page_html,updated_at:new Date().toISOString()}).eq('id',currentId);$('#save').disabled=false;msg('#save-message',error?error.message:`저장했습니다. ${publicUrl(currentId)}에 바로 반영됩니다.`,error?'error':'success')});
+$('#logout').addEventListener('click',async()=>{await client.auth.signOut();editor.hidden=true;loginCard.hidden=false});
+if(configured()){client=window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_ANON_KEY);restoreSession()}else msg('#login-message','Supabase 연결 설정이 필요합니다.','error');

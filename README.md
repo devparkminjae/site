@@ -10,4 +10,4 @@
 4. [`supabase-config.example.js`](supabase-config.example.js)를 복사해 루트의 `supabase-config.js`로 만들고 Project URL과 anon key를 입력합니다. service_role 키는 절대 넣지 마세요.
 5. `supabase-config.js`를 포함해 GitHub에 푸시한 뒤, GitHub Pages를 `main` 브랜치의 `/root`로 배포합니다. anon key는 브라우저용 공개 키이며, 실제 쓰기 권한은 RLS 정책이 제어합니다.
 
-배포 후 `https://아이디.github.io/저장소이름/admin/`에서 로그인해 HTML 단일 파일을 업로드하거나 Ctrl+V로 코드를 붙여넣습니다. 기존 Supabase 프로젝트라면 스키마 파일의 `alter table` 줄도 한 번 실행하세요.
+배포 후 `https://아이디.github.io/저장소이름/admin/`에서 로그인해 HTML 단일 파일을 업로드하거나 Ctrl+V로 코드를 붙여넣습니다. 관리자에서 새 사이트의 디렉터리 이름(예: `event-2026`)을 만들면 `https://아이디.github.io/저장소이름/event-2026/` 주소로 각각의 사이트를 운영할 수 있습니다. 기존 Supabase 프로젝트라면 스키마 파일의 `alter table` 줄도 한 번 실행하세요.
