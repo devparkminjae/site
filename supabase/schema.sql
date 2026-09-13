@@ -6,8 +6,9 @@ create table if not exists public.profiles (
 );
 create table if not exists public.site_content (
   id text primary key, title text not null default '우리 사이트', description text not null default '',
-  button_text text not null default '시작하기', button_url text not null default '#about', body text not null default '', image_url text not null default '', updated_at timestamptz not null default now()
+  button_text text not null default '시작하기', button_url text not null default '#about', body text not null default '', image_url text not null default '', page_html text not null default '', updated_at timestamptz not null default now()
 );
+alter table public.site_content add column if not exists page_html text not null default '';
 insert into public.site_content (id) values ('home') on conflict (id) do nothing;
 alter table public.profiles enable row level security;
 alter table public.site_content enable row level security;
