@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Website Tree</title>
+
+  <style>
+    :root {
+      font-family: Arial, sans-serif;
+      color: #222;
+      background: #f6f7f9;
+    }
+
+    body {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    h1 {
+      margin-bottom: 24px;
+    }
+
+    .tree {
+      padding: 24px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 18px #00000012;
+    }
+
+    ul {
+      list-style: none;
+      margin: 0;
+      padding-left: 24px;
+    }
+
+    li {
+      position: relative;
+      margin: 8px 0;
+    }
+
+    li::before {
+      content: "├─";
+      position: absolute;
+      left: -22px;
+      color: #999;
+    }
+
+    li:last-child::before {
+      content: "└─";
+    }
+
+    button {
+      border: 0;
+      background: transparent;
+      cursor: pointer;
+      font-size: 1rem;
+      text-align: left;
+      color: #1769aa;
+    }
+
+    button:hover {
+      text-decoration: underline;
+    }
+
+    .folder {
+      font-weight: bold;
+      color: #222;
+    }
+
+    .children {
+      display: none;
+    }
+
+    .expanded > .children {
+      display: block;
+    }
+
+    .icon {
+      display: inline-block;
+      width: 22px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Website Contents</h1>
+
+  <main id="tree" class="tree"></main>
+
+  <script>
+    // Change only this list to update the tree.
+    const treeData = [
+      {
+        name: "Home",
+        url: "/"
+      },
+      {
+        name: "About",
+        children: [
+          {
+            name: "Our Story",
+            url: "/about/story"
+          },
+          {
+            name: "Team",
+            url: "/about/team"
+          }
+        ]
+      },
+      {
+        name: "Services",
+        children: [
+          {
+            name: "Web Design",
+            url: "/services/web-design"
+          },
+          {
+            name: "Development",
+            url: "/services/development"
+          },
+          {
+            name: "SEO",
+            url: "/services/seo"
+          }
+        ]
+      },
+      {
+        name: "Blog",
+        url: "/blog"
+      },
+      {
+        name: "Contact",
+        url: "/contact"
+      }
+    ];
+
+    function createTree(items) {
+      const list = document.createElement("ul");
+
+      items.forEach(item => {
+        const listItem = document.createElement("li");
+        const hasChildren = Array.isArray(item.children);
+
+        if (hasChildren) {
+          listItem.className = "folder";
+
+          const toggle = document.createElement("button");
+          toggle.innerHTML = `<span class="icon">▶</span>${item.name}`;
+
+          const children = createTree(item.children);
+          children.className = "children";
+
+          toggle.addEventListener("click", () => {
+            const expanded = listItem.classList.toggle("expanded");
+            toggle.querySelector(".icon").textContent = expanded ? "▼" : "▶";
+          });
+
+          listItem.append(toggle, children);
+        } else {
+          const link = document.createElement("a");
+          link.href = item.url || "#";
+          link.textContent = item.name;
+          link.style.color = "#1769aa";
+          link.style.textDecoration = "none";
+
+          listItem.appendChild(link);
+        }
+
+        list.appendChild(listItem);
+      });
+
+      return list;
+    }
+
+    document.querySelector("#tree").appendChild(createTree(treeData));
+  </script>
+</body>
+</html>
